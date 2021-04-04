@@ -6,8 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	//	"golang.org/x/oauth2"
-	//	"golang.org/x/oauth2/google"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -16,9 +14,9 @@ import (
 )
 
 const (
-	Authorize_EndPoint = "https://api.intra.42.fr/oauth/authorize"
-	Token_Endpoint     = "https://api.intra.42.fr/oauth/token"
-	CallBackURL        = "/callback"
+	ApiEndpoint   = "https://api.intra.42.fr/v2"
+	TokenEndpoint = "https://api.intra.42.fr/oauth/token"
+	CallBackURL   = "/callback"
 )
 
 type API_Access struct {
@@ -29,24 +27,7 @@ type API_Access struct {
 	Response_type string `json:"response_type"`
 }
 
-/*
-func GetOAuthConf() *oauth2.Config {
-	OAuthConf := &oauth2.Config{
-		ClientID:     UID,
-		ClientSecret: SECRET,
-		Endpoint:     google.Endpoint, // 42 endpoint로 바꿔야함
-		RedirectURL:  CallBackURL,
-		Scopes:       []string{"public"},
-	}
-	return OAuthConf
-}
-*/
-
-/*
-func GetLoginURL(state string) string {
-	return OAuthConf.AuthCodeURL(state)
-}
-*/
+var token Token
 
 func RenderTemplate(w http.ResponseWriter, name string, data interface{}) {
 	tmpl, _ := template.ParseFiles(name)
@@ -87,45 +68,75 @@ type AccessKey struct {
 	ClientSecret string `json:"client_secret"`
 }
 
-func OpenJsonFile(file string) (AccessKey, error) {
+func OpenJsonFile(file string) (*AccessKey, error) {
 	data, err := os.Open(file)
 	if err != nil {
 		log.Printf("Fail to Open json file: %v", err)
-		return AccessKey{}, err
+		return nil, err
 	}
 	var access_key AccessKey
 	byteValue, _ := ioutil.ReadAll(data)
 	json.Unmarshal(byteValue, &access_key)
-	return access_key, nil
+	return &access_key, nil
 }
 
-func GetToken() {
-	access_key, err := OpenJsonFile("api_access.json")
+func InitToken(access_key_file string) error {
+	access_key, err := OpenJsonFile(access_key_file)
 	if err != nil {
-		return
+		return err
 	}
 	credential := Credential{"client_credentials", access_key.ClientId, access_key.ClientSecret}
 	//
 	marshal_credential, _ := json.Marshal(credential)
-	res, err := http.Post("https://api.intra.42.fr/oauth/token", "application/json", bytes.NewBuffer(marshal_credential))
-	if err != nil {
+	res, err := http.Post(TokenEndpoint, "application/json", bytes.NewBuffer(marshal_credential))
+	if err != nil && res.StatusCode != http.StatusOK {
 		log.Printf("couldn't create HTTP request: %v", err)
-		return
+		return err
 	}
 	defer res.Body.Close()
 
-	var token Token
 	decoder := json.NewDecoder(res.Body)
 	err = decoder.Decode(&token)
 	log.Println(token)
 	if err != nil {
 		log.Printf("Fail to Decode token\n")
-		return
+		return err
 	}
+	return nil
+}
+
+func IsValidUser(user_id string) error {
+	req, err := http.NewRequest("GET", ApiEndpoint+"/users/"+user_id+"/campus_users", nil)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	req.Header.Add("Authorization", token.TokenType+" "+token.AccessToken)
+
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer res.Body.Close()
+
+	bytes, _ := ioutil.ReadAll(res.Body)
+	fmt.Printf("API Result: %s", string(bytes))
+	fmt.Printf("API Result: %s", string(bytes))
+	return nil
+}
+
+func ApiHandler(w http.ResponseWriter, r *http.Request) {
+
 }
 
 func main() {
-	GetToken()
+	if err := InitToken("api_access.json"); err != nil {
+		log.Fatalln("Fail to getting token. Check api_access")
+	}
+	IsValidUser("jinykim")
 	http.HandleFunc("/", MainHandler)
+	http.HandleFunc("/api", ApiHandler)
 	http.ListenAndServe(":8000", nil)
 }
