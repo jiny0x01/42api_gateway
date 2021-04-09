@@ -1,25 +1,8 @@
 package api
 
-import (
-	"github.com/jinykim0x80/42api_gateway/internal/api/token"
-	"net/http"
-)
-
 const (
 	Endpoint = "https://api.intra.42.fr/v2"
 )
-
-var hdr http.Header
-
-func GetHeader() *http.Header {
-	return &hdr
-}
-
-func SetHeader() {
-	t := token.Get()
-	hdr = http.Header{}
-	hdr.Add("Authorization", t.TokenType+" "+t.AccessToken)
-}
 
 /*
 type OAuth struct {

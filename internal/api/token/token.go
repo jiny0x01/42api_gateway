@@ -3,15 +3,26 @@ package token
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"github.com/jinykim0x80/42api_gateway/internal"
 	"log"
 	"net/http"
-	"os"
 )
 
 const (
 	Endpoint = "https://api.intra.42.fr/oauth/token"
 )
+
+var hdr http.Header
+
+func GetHeader() *http.Header {
+	return &hdr
+}
+
+func SetHeader() {
+	t := Get()
+	hdr = http.Header{}
+	hdr.Add("Authorization", t.TokenType+" "+t.AccessToken)
+}
 
 type Credential struct {
 	GrantType    string `json:"grant_type"`
@@ -34,24 +45,13 @@ type Token struct {
 
 var t Token
 
-func OpenFile(file string) (*AccessInfo, error) {
-	data, err := os.Open(file)
-	if err != nil {
-		log.Printf("Fail to Open json file: %v", err)
-		return nil, err
-	}
-	var access_info AccessInfo
-	byteValue, _ := ioutil.ReadAll(data)
-	json.Unmarshal(byteValue, &access_info)
-	return &access_info, nil
-}
-
 func Get() *Token {
 	return &t
 }
 
 func (t *Token) Verify(file string) error {
-	access, err := OpenFile(file)
+	var access AccessInfo
+	err := util.ReadJSON(file, &access)
 	if err != nil {
 		return err
 	}
