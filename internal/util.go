@@ -8,7 +8,6 @@ import (
 )
 
 func WriteJSON(file string, data []byte) error {
-	json.Marshal(data)
 	err := ioutil.WriteFile(file, data, 0644)
 	if err != nil {
 		return err
