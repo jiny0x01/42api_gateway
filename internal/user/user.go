@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/jinykim0x80/42api_gateway/internal/api"
 	"github.com/jinykim0x80/42api_gateway/internal/api/token"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -13,58 +12,45 @@ import (
 )
 
 type User struct {
-	ID    int    `json:"id"`
-	Login string `json:"login"`
-	URL   string `json:"url"`
+	UID  int    `json:"uid"`
+	Name string `json:"name"`
+}
+type Users []User
+
+var users Users
+
+func Get() Users {
+	return users
 }
 
-type Users struct {
-	User []User `json:user`
-}
-type ValidUsers struct {
-	users Users
+func Set(u Users) {
+	users = u
 }
 
-func IsValidUser(user_id string) error {
-	req, err := http.NewRequest("GET", api.Endpoint+"/users/"+user_id+"/campus_users", nil)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	req.Header = *token.GetHeader()
-
-	client := &http.Client{}
-	res, err := client.Do(req)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	defer res.Body.Close()
-
-	bytes, _ := ioutil.ReadAll(res.Body)
-	// response로 만료되었다고 메시지가 오면?
-	log.Printf("API Result: %s", string(bytes))
-	return nil
-}
-
-func (users *Users) GetValidUsers(u Users, vu *ValidUsers) error {
-	/*
-		for _, user := range u {
-			log.Printf("user: %s\n", user)
-			if err := IsValidUser(user); err != nil {
-				vu.users = append(vu.users, user)
-				log.Printf("vu: %v\n", vu)
-			}
+func IsValidUser(name string) bool {
+	users := Get()
+	for _, user := range users {
+		if user.Name == name {
+			return true
 		}
-		return nil
-	*/
+	}
+	return false
+}
+
+func GetValidUsers(user []string, vu []string) error {
+	for i := range user {
+		log.Printf("user name: %v\n", user[i])
+		if IsValidUser(user[i]) {
+			vu = append(vu, user[i])
+			log.Printf("vu: %v\n", vu)
+		}
+	}
 	return nil
 }
 
-func GetAll() (Users, error) {
+func Load() error {
 	const startID = 68848
 	var err error
-	var user []User
 	// 고루틴으로 처리하면 1초당 API request 제한걸림
 	builder := strings.Builder{}
 	builder.WriteString(api.Endpoint)
@@ -77,7 +63,7 @@ func GetAll() (Users, error) {
 		req, err := http.NewRequest("GET", builder.String(), nil)
 		if err != nil {
 			log.Println("fail to request")
-			return Users{}, nil
+			return nil
 		}
 		req.Header = *token.GetHeader()
 
@@ -88,23 +74,34 @@ func GetAll() (Users, error) {
 		}
 		defer res.Body.Close()
 
-		var u []User
+		type UserInfo struct {
+			ID    int    `json:"id"`
+			Login string `json:"login"`
+			URL   int    `json:"url"`
+		}
+		var userInfo []UserInfo
 		decoder := json.NewDecoder(res.Body)
-		decoder.Decode(&u)
-		if err != nil || len(u) == 0 {
+		decoder.Decode(&userInfo)
+		if err != nil || len(userInfo) == 0 {
 			break
 		}
-		user = append(user, u...)
+		for _, u := range userInfo {
+			if u.ID >= startID {
+				users = append(users, User{u.ID, u.Login})
+			}
+		}
 		time.Sleep(time.Millisecond * 500) // 0.5sec
 	}
-	var users Users
-	for _, u := range user {
-		// 68848부터 유효한 사용자
-		if u.ID >= 68848 {
-			users.User = append(users.User, u)
+	/*
+		for _, u := range user {
+			// 68848부터 유효한 사용자
+			if u.ID >= 68848 {
+				users.User = append(users.User, u)
+			}
 		}
-	}
-	return users, err
+	*/
+	log.Println(users)
+	return err
 }
 
 func Upsert() {

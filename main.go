@@ -16,7 +16,7 @@ import (
 )
 
 func Server() {
-	rpc.Register(new(user.Users))
+	//	rpc.Register(new(user.Users))
 	ln, err := net.Listen("tcp", ":8081")
 	if err != nil {
 		log.Println(err)
@@ -46,28 +46,28 @@ func Init() {
 	token.SetHeader()
 	log.Println("Header Set Done")
 
-	var users user.Users
-	if err := util.ReadJSON("user.json", &users); err == nil {
-		log.Println(users)
+	var u user.Users
+	u = user.Get()
+	if err := util.ReadJSON("user.json", &u); err == nil && u != nil {
+		log.Println(err)
 		return
 	}
-	if len(users.User) == 0 {
+	if len(u) == 0 {
 		log.Println("Getting user list")
-		u, err := user.GetAll()
+		err := user.Load()
 		if err != nil {
 			log.Println(err)
 			return
 		}
+		u = user.Get()
 		bytes, _ := json.Marshal(u)
 		err = util.WriteJSON("user.json", bytes)
 		if err != nil {
 			log.Println(err)
 			return
 		}
-		users = u
 	}
-	log.Println("WriteResult")
-	log.Println(users)
+	log.Println(u)
 
 	/*
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
