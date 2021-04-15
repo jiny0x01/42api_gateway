@@ -48,10 +48,11 @@ func Init() {
 
 	var u user.Users
 	u = user.Get()
-	if err := util.ReadJSON("user.json", &u); err == nil && u != nil {
+
+	if err := util.ReadJSON("user.json", &u); err != nil {
 		log.Println(err)
-		return
 	}
+
 	if len(u) == 0 {
 		log.Println("Getting user list")
 		err := user.Load()

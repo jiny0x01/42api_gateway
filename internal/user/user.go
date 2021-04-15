@@ -27,8 +27,12 @@ func Set(u Users) {
 	users = u
 }
 
-func IsValidUser(name string) bool {
+func IsValid(name string) bool {
 	users := Get()
+	if len(users) == 0 {
+		log.Printf("Not Found user")
+		return false
+	}
 	for _, user := range users {
 		if user.Name == name {
 			return true
@@ -37,12 +41,10 @@ func IsValidUser(name string) bool {
 	return false
 }
 
-func GetValidUsers(user []string, vu []string) error {
+func GetValid(user []string, vu *[]string) error {
 	for i := range user {
-		log.Printf("user name: %v\n", user[i])
-		if IsValidUser(user[i]) {
-			vu = append(vu, user[i])
-			log.Printf("vu: %v\n", vu)
+		if IsValid(user[i]) {
+			*vu = append(*vu, user[i])
 		}
 	}
 	return nil
