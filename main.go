@@ -5,7 +5,6 @@ import (
 	"github.com/jinykim0x80/42api_gateway/internal"
 	"github.com/jinykim0x80/42api_gateway/internal/api/token"
 	"github.com/jinykim0x80/42api_gateway/internal/user"
-
 	//	"go.mongodb.org/mongo-driver/mongo"
 	//	"context"
 	//	"go.mongodb.org/mongo-driver/mongo/options"
@@ -16,7 +15,7 @@ import (
 )
 
 func Server() {
-	//	rpc.Register(new(user.Users))
+	rpc.Register(new(user.User))
 	ln, err := net.Listen("tcp", ":8081")
 	if err != nil {
 		log.Println(err)
@@ -68,8 +67,7 @@ func Init() {
 			return
 		}
 	}
-	log.Println(u)
-
+	user.Set(u)
 	/*
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
@@ -87,10 +85,9 @@ func Init() {
 			return
 		}
 	*/
-
 }
 
 func main() {
 	Init()
-	//	Server()
+	Server()
 }
