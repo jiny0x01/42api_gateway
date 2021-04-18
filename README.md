@@ -1,7 +1,7 @@
 # 42api_gateway
 
 ## API Access setting
-You must create `api_access.json`
+You must create `api_access.json` at root
 + format
 ```json
 {
