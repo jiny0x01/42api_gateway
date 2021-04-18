@@ -2,7 +2,8 @@
 
 ## API Access setting
 You must create `api_access.json`
-+ ```json
++ format
+```json
 {
 	"client_id": "VALUE HERE",
 	"client_secret": "VALUE HERE"
