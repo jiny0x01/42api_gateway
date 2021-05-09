@@ -16,7 +16,7 @@ import (
 
 func Server() {
 	rpc.Register(new(user.User))
-	ln, err := net.Listen("tcp", ":8081")
+	ln, err := net.Listen("tcp", "http://42report.today:8081")
 	if err != nil {
 		log.Println(err)
 		return
