@@ -41,11 +41,14 @@ func IsValid(name string) bool {
 }
 
 func (u *User) GetValid(user []string, vu *[]string) error {
+	log.Println("RPC Called=========")
+	log.Printf("user: %v\n", user)
 	for i := range user {
 		if IsValid(user[i]) {
 			*vu = append(*vu, user[i])
 		}
 	}
+	log.Printf("return: %v\n", *vu)
 	return nil
 }
 
